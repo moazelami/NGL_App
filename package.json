@@ -1,0 +1,14 @@
+{
+  "main": "./src/main.js",
+  "scripts": {
+    "dev": "node --watch .",
+    "start": "node ."
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.6.0",
+    "mongoose": "^9.10.0"
+  }
+}
