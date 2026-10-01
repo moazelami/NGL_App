@@ -20,8 +20,10 @@ const userSchema = new Schema(
 
         password: {
             type: String,
-            required: false,
-            minlength: 6,
+            required: function (){
+                return this.provider === 'local';
+            },
+            minlength: 8,
         },
 
         provider: {
@@ -43,9 +45,18 @@ const userSchema = new Schema(
             type: Boolean,
             default: false,
         },
+        dob:Date,
+        gender:{
+            type: String,
+            enum: ['male', 'female'],
+            default: 'male',
+        }
     },
     {
-        timestamps: true,
+        timestamps:{
+            createdAt: true,
+            updatedAt: true,
+        },
     }
 );
 
