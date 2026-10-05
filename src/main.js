@@ -1,10 +1,10 @@
 import express from 'express';
 import {config} from 'dotenv';
 config();
-import authRouter from './app/auth/auth.route';
-import userRouter from './app/user/user.route';
-import messageRouter from './app/message/message.route';
-import connectDB from "./common/db/mongoose";
+import authRouter from './app/auth/auth.route.js';
+import userRouter from './app/user/user.route.js';
+import messageRouter from './app/message/message.route.js';
+import connectDB from "./common/db/mongoose.js";
 
 const PORT = 3000;
 

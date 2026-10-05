@@ -1,7 +1,8 @@
-import *  as authRepo from '../repository/auth.repo';
-import * as otpRepo from '../repository/otp.repo';
+import *  as authRepo from '../repository/auth.repo.js';
+import * as otpRepo from '../repository/otp.repo.js';
 import bcrypt from 'bcrypt';
 import crypto from 'node:crypto';
+import {sendEmail} from "../../../common/email/nodemailer.js";
 
 export const register = async (userData) => {
     const userExists = await authRepo.checkUserExistByEmail(userData.email);
@@ -14,14 +15,15 @@ export const register = async (userData) => {
 
     const createdUser = await authRepo.createUser(userData);
 
-    const otp = crypto.randomInt(1000000,999999).toString();
+    const otp = crypto.randomInt(100000, 1000000).toString();
 
     await otpRepo.createOTP({
         code: otp,
         email: userData.email,
-        expiresAt: new Date(date.now() + 1000 * 60 * 5 ),
+        expireAt: new Date(Date.now() + 1000 * 60 * 5 ),
     });
-    //todo:send email verification OTP
+
+    await sendEmail(userData.email, 'verification code', `<h1>Your verification code is ${otp}</h1>`);
 
     return createdUser;
 

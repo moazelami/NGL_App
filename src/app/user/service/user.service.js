@@ -1,1 +1,1 @@
-import userRepo from '../repository/user.repo'
+import * as userRepo from '../repository/user.repo.js'

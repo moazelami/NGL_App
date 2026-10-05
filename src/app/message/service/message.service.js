@@ -1,1 +1,1 @@
-import messageRepo from '../repository/message.repo';
+import * as messageRepo from '../repository/message.repo.js';

@@ -1,1 +1,1 @@
-import messageService from '../service/message.service';
+import * as messageService from '../service/message.service.js';

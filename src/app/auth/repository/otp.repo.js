@@ -1,5 +1,5 @@
-import {OTP} from '../model/OTP.model';
+import {OTP} from '../model/OTP.model.js';
 
-export const createOTP = async (userData)=>{
-    return await OTP.create(userData);
+export const createOTP = async (otpData)=>{
+    return await OTP.create(otpData);
 }

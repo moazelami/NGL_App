@@ -27,4 +27,4 @@ const otpSchema = new Schema({
 
 otpSchema.index({createdAt:1} , {expireAfterSeconds:300});
 
-export const User = model('OTP',otpSchema);
+export const OTP = model('OTP',otpSchema);
