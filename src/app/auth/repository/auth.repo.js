@@ -6,5 +6,6 @@ export const checkUserExistByEmail = async (email) => {
 
 export const createUser = async (userData)=>{
     return await User.create(userData);
-}
+};
+
 

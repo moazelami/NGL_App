@@ -18,6 +18,13 @@ app.use('/auth', authRouter);
 app.use('/user', userRouter);
 app.use('/message', messageRouter);
 
+app.use((err , req ,res , next)=>{
+    console.log(err);
+    res.status(500).json({
+        success: false,
+        message: err.message
+    });
+});
 
 app.listen(PORT , ()=>{
     console.log(`Listening on ${PORT} ...`);
