@@ -1,7 +1,9 @@
+import {AppError} from "../../lib/error/error.js";
 
 
-export const userNotExist = new Error('User Not Exists.');
-export const userAlreadyVerified = new Error('User Already Verified.');
-export const invalidCode = new Error('Invalid code.');
-export const invalidEmailOrPassword = new Error('Invalid email or password');
-export const pleaseVerifyYourAccount = new Error('Please verify your account');
+export const invalidCode = new AppError('Invalid code.');
+export const invalidEmailOrPassword = new AppError('Invalid email or password');
+export const pleaseVerifyYourAccount = new AppError('Please verify your account');
+export const expiredOtp = new AppError('OTP expired, please resend OTP');
+export const invalidCodeOrEmail = new AppError('Invalid code or email');
+export const codeExpired = new AppError('Code expired');

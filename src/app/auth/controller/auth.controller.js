@@ -1,4 +1,5 @@
 import * as authService from '../service/auth.service.js';
+import {toMs} from "../../../lib/utils/time.js";
 
 export const register = async (req, res , next) => {
     try{
@@ -31,11 +32,37 @@ export const login = async (req, res , next) => {
     try{
         const {email , password} = req.body;
         const token = await authService.login(email, password);
+        res.cookie('access-token',token,{httpOnly:true , maxAge:toMs(5,'hours')});
         res.json({
             message: 'Login successful',
             success: true,
-            data: {token}
         });
+    }catch(err){
+        next(err);
+    }
+};
+
+export const sendOtp = async (req, res , next) => {
+    try{
+        const {email} = req.body;
+        await authService.sendOtp(email);
+        res.json({
+            message: 'new OTP sent, check your email',
+            success: true,
+        });
+    }catch(err){
+        next(err);
+    }
+};
+
+export const resetPassword = async (req, res , next) => {
+    try{
+    const {email, code, newPassword} = req.body;
+    await authService.resetPassword(email, code, newPassword);
+    res.json({
+        message: 'Reset password successful',
+        success: true,
+    });
     }catch(err){
         next(err);
     }

@@ -11,3 +11,8 @@ export const getOtpByEmail = async (email)=>{
 export const deleteOtp = async (email)=>{
     return await OTP.deleteMany({email:email});
 };
+
+
+export const findOTP = async (email, code) => {
+    return await OTP.findOne({ email, code});
+};

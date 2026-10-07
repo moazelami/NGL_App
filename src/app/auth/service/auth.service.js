@@ -2,32 +2,37 @@ import *  as authRepo from '../repository/auth.repo.js';
 import * as otpRepo from '../repository/otp.repo.js';
 import bcrypt from 'bcrypt';
 import crypto from 'node:crypto';
-import {sendEmail} from "../../../common/email/nodemailer.js";
+import {sendEmail} from "../../../lib/email/nodemailer.js";
 import * as userRepo from "../../user/repository/user.repo.js";
-import * as time from "../../../common/utils/time.js";
+import * as time from "../../../lib/utils/time.js";
 import {Error} from "mongoose";
 import jwt from "jsonwebtoken";
 import {
-    invalidCode,
+    codeExpired,
+    expiredOtp,
+    invalidCode, invalidCodeOrEmail,
     invalidEmailOrPassword,
     pleaseVerifyYourAccount,
-    userAlreadyVerified,
-    userNotExist
 } from "../error.js";
+import {userNotExist, userAlreadyVerified} from "../../user/error.js";
+import {generateOtpCode} from "../../../lib/utils/otp.js";
+import {logger} from "../../../lib/logger/logger.js";
+
+
 
 
 export const register = async (userData) => {
     const userExists = await authRepo.checkUserExistByEmail(userData.email);
 
     if (userExists) {
-        throw userNotExist
+        throw userNotExist;
     }
 
     userData.password = await bcrypt.hash(userData.password, 10);
 
     const createdUser = await authRepo.createUser(userData);
 
-    const otp = crypto.randomInt(100000, 1000000).toString();
+    const otp = generateOtpCode();
 
     await otpRepo.createOTP({
         code: otp,
@@ -52,7 +57,7 @@ export const verifyAccount = async (email , code)=>{
     }
 
     const otp = await otpRepo.getOtpByEmail(email);
-    if(!otp) throw new Error('OTP expired, please resend OTP');
+    if(!otp) throw expiredOtp;
     if(otp.code !== code) throw invalidCode;
     const updatedUser = await userRepo.updateUserByEmail(email, {isVerified: true});
 
@@ -92,8 +97,45 @@ export const login = async (email , password)=>{
 
 };
 
+export const sendOtp = async (email) => {
+    const user = await authRepo.checkUserExistByEmail(email);
+    if(!user){
+        throw userNotExist;
+    }
 
+    await otpRepo.deleteOtp(email);
+    if (user.isVerified) throw userAlreadyVerified;
+    const otp = generateOtpCode();
+    logger.info(otp)
+    await otpRepo.createOTP({
+        code: otp,
+        email: email,
+        expireAt: new Date(Date.now() + time.toMs(5,'minutes')),
+    });
 
+    await sendEmail(email, 'verification code', `<h1>Your verification code is ${otp}</h1>`);
+}
+
+export const resetPassword = async (email, code, newPassword) => {
+    const user = await authRepo.checkUserExistByEmail(email);
+    if (!user) {
+        throw invalidCodeOrEmail;
+    }
+
+    const otp = await otpRepo.findOTP(email, code);
+    if (!otp) {
+        throw invalidCodeOrEmail;
+    }
+
+    if (otp.expireAt < new Date()) {
+        throw codeExpired;
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await authRepo.updatePassword(email, hashedPassword);
+
+    await otpRepo.deleteOtp(email);
+};
 
 
 
