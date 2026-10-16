@@ -1,12 +1,8 @@
 import *  as authRepo from '../repository/auth.repo.js';
 import * as otpRepo from '../repository/otp.repo.js';
-import bcrypt from 'bcrypt';
-import crypto from 'node:crypto';
 import {sendEmail} from "../../../lib/email/nodemailer.js";
 import * as userRepo from "../../user/repository/user.repo.js";
 import * as time from "../../../lib/utils/time.js";
-import {Error} from "mongoose";
-import jwt from "jsonwebtoken";
 import {
     codeExpired,
     expiredOtp,
@@ -17,7 +13,9 @@ import {
 import {userNotExist, userAlreadyVerified} from "../../user/error.js";
 import {generateOtpCode} from "../../../lib/utils/otp.js";
 import {logger} from "../../../lib/logger/logger.js";
-
+import {generateToken} from "../utils/token.js";
+import {comparePassword, hashedPassword} from "../utils/hash.js";
+import {verifyGoogleToken} from "../../../lib/utils/google.auth.js";
 
 
 
@@ -28,7 +26,7 @@ export const register = async (userData) => {
         throw userNotExist;
     }
 
-    userData.password = await bcrypt.hash(userData.password, 10);
+    userData.password = await hashedPassword(userData.password);
 
     const createdUser = await authRepo.createUser(userData);
 
@@ -76,7 +74,7 @@ export const login = async (email , password)=>{
         throw invalidEmailOrPassword;
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await comparePassword(password, user.password);
     if (!isMatch)
          throw invalidEmailOrPassword;
 
@@ -84,14 +82,11 @@ export const login = async (email , password)=>{
         throw pleaseVerifyYourAccount;
     }
 
-    const token = jwt.sign({
+    const token = generateToken({
         id: user.id,
         name: user.name,
         role: user.role,
-    },
-        process.env.JWT_SECRET,
-        {expiresIn: '1d'}
-        );
+    });
 
     return token;
 
@@ -131,12 +126,38 @@ export const resetPassword = async (email, code, newPassword) => {
         throw codeExpired;
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await hashedPassword(newPassword);
     await authRepo.updatePassword(email, hashedPassword);
 
     await otpRepo.deleteOtp(email);
 };
 
+
+export const loginWithGoogle = async (idToken) => {
+    //1. verify idToken
+    const payload = await verifyGoogleToken(idToken);
+    //2. check if user exists
+    const user =  await authRepo.checkUserExistByEmail(payload.email);
+    //3. if exists >> generate token 
+    if(user) {
+        const token = generateToken({
+            id: user._id,
+            email: user.email,
+        });
+        return token;
+    }
+    //4. if not exists >> create user >> generate token
+    const createdUser = await authRepo.createUser({
+        name: payload.name,
+        email: payload.email,
+        provider: 'google',
+        isVerified: true,
+    });
+    return generateToken({
+        id: createdUser.id,
+        email: createdUser.email,
+    });
+}
 
 
 

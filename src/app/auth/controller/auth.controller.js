@@ -18,9 +18,10 @@ export const register = async (req, res , next) => {
 };
 
 export const verifyAccount = async (req, res , next) => {
-    try{
-        const {email , code} = req.body;
-        const updatedUser = await authService.verifyAccount(email , code);
+    try {
+        const data = validateBody(verifyAccountDTO, req.body);
+        const { email, code } = data;
+        const updatedUser = await authService.verifyAccount(email, code);
         res.json({
             message: 'user already Verified',
             success: true,
@@ -32,8 +33,9 @@ export const verifyAccount = async (req, res , next) => {
 };
 
 export const login = async (req, res , next) => {
-    try{
-        const {email , password} = req.body;
+    try {
+        const data = validateBody(loginDTO, req.body);
+        const {email , password} = data;
         const token = await authService.login(email, password);
         res.cookie('access-token',token,{httpOnly:true , maxAge:toMs(5,'hours')});
         res.json({
@@ -46,8 +48,9 @@ export const login = async (req, res , next) => {
 };
 
 export const sendOtp = async (req, res , next) => {
-    try{
-        const {email} = req.body;
+    try {
+        const data = validateBody(senddtoDTO, req.body);
+        const {email} = data;
         await authService.sendOtp(email);
         res.json({
             message: 'new OTP sent, check your email',
@@ -60,7 +63,8 @@ export const sendOtp = async (req, res , next) => {
 
 export const resetPassword = async (req, res , next) => {
     try{
-    const {email, code, newPassword} = req.body;
+    const data = validateBody(resetPasswordDTO, req.body);
+    const {email, code, newPassword} = data;
     await authService.resetPassword(email, code, newPassword);
     res.json({
         message: 'Reset password successful',
@@ -71,7 +75,18 @@ export const resetPassword = async (req, res , next) => {
     }
 };
 
-
+export const loginWithGoogle = async (req, res, next) => {
+    try {
+        const token = await authService.loginWithGoogle(req.body.idToken);
+        res.cookie('access-token', token, { httpOnly: true, maxAge: toMs(5, 'hours') });
+        res.json({
+            message: 'user login successful',
+            success: true,
+        });
+    } catch (err) {
+        next(err);
+    }
+};
 
 
 
