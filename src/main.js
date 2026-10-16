@@ -6,12 +6,12 @@ import userRouter from './app/user/user.route.js';
 import messageRouter from './app/message/message.route.js';
 import connectDB from "./lib/db/mongoose.js";
 import {logger} from "./lib/logger/logger.js";
-
+import cors from 'cors';
 
 const PORT = 3000;
 
 const app = express();
-
+app.use(cors({ origin: 'http://localhost:4200' }));
 connectDB();
 
 app.use(express.json());

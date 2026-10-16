@@ -1,9 +1,12 @@
 import * as authService from '../service/auth.service.js';
-import {toMs} from "../../../lib/utils/time.js";
+import { toMs } from "../../../lib/utils/time.js";
+import { validateBody } from '../../../lib/validation/validation.js';
+import { registerDTO, verifyAccountDTO } from '../dto/auth.dto.js';
 
 export const register = async (req, res , next) => {
-    try{
-        const createdUser = await authService.register(req.body);
+    try {
+        const data = validateBody(registerDTO, req.body);
+        const createdUser = await authService.register(data);
         res.status(201).send({
             message: 'Registered successfully',
             success: true,
