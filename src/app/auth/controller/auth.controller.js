@@ -1,5 +1,5 @@
 import * as authService from '../service/auth.service.js';
-import { toMs } from "../../../lib/utils/time.js";
+import { toMs } from "../../../pkg/utils/time.js";
 import { validateBody } from '../../../lib/validation/validation.js';
 import { registerDTO, verifyAccountDTO } from '../dto/auth.dto.js';
 

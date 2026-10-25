@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import {env} from '../config/env.js';
 
 const testAccount = await nodemailer.createTestAccount();
 const transporter = nodemailer.createTransport({
@@ -6,8 +7,8 @@ const transporter = nodemailer.createTransport({
     port: 587,
     secure: false,
     auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
+        user: env.nodemailer.user,
+        pass: env.nodemailer.password,
     },
 });
 

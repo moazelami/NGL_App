@@ -2,7 +2,7 @@ import *  as authRepo from '../repository/auth.repo.js';
 import * as otpRepo from '../repository/otp.repo.js';
 import {sendEmail} from "../../../lib/email/nodemailer.js";
 import * as userRepo from "../../user/repository/user.repo.js";
-import * as time from "../../../lib/utils/time.js";
+import * as time from "../../../pkg/utils/time.js";
 import {
     codeExpired,
     expiredOtp,
@@ -12,7 +12,7 @@ import {
 } from "../error.js";
 import {userNotExist, userAlreadyVerified} from "../../user/error.js";
 import {generateOtpCode} from "../../../lib/utils/otp.js";
-import {logger} from "../../../lib/logger/logger.js";
+import {logger} from "../../../pkg/logger/logger.js";
 import {generateToken} from "../utils/token.js";
 import {comparePassword, hashedPassword} from "../utils/hash.js";
 import {verifyGoogleToken} from "../../../lib/utils/google.auth.js";
