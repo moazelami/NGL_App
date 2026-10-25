@@ -1,30 +1,36 @@
-import { email, z } from 'zod';
+import { z } from 'zod';
+
+const emailSchema = z.string().trim().toLowerCase().pipe(z.email());
 
 export const registerDTO = z.object({
-    email: z.email().lowercase().trim(),
-    name: z.string().min(2).max(20).trim(),
-    password: z.string().min(8).max(16).trim(),
+    email: emailSchema,
+    name: z.string().trim().min(3).max(20),
+    password: z.string().trim().min(8).max(16),
     provider: z.enum(['local', 'google', 'facebook']).default('local'),
-    dob: z.date().optional(),
+    dob: z.coerce.date().optional(),
     gender: z.enum(['male', 'female']).optional(),
 });
 
 export const verifyAccountDTO = z.object({
-    email: z.email().lowercase().trim(),
-    code: z.string().length(6).trim(),
+    email: emailSchema,
+    code: z.string().trim().length(6),
 });
 
 export const loginDTO = z.object({
-    email: z.email().lowercase().trim(),
-    password: z.string().min(8).max(16).trim(),
+    email: emailSchema,
+    password: z.string().trim().min(8).max(16),
 });
 
 export const  senddtoDTO = z.object({
-    email: z.email().lowercase().trim(),
+    email: emailSchema,
 });
 
 export const resetPasswordDTO = z.object({
-    password: z.string().min(8).max(16).trim(),
-    token: z.string().trim(),
-    newPassword: z.string().min(8).max(16).trim(),
+    email: emailSchema,
+    code: z.string().trim().length(6),
+    newPassword: z.string().trim().min(8).max(16),
+});
+
+export const googleLoginDTO = z.object({
+    idToken: z.string().min(1),
 });

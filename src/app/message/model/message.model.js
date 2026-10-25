@@ -5,7 +5,7 @@ const messageSchema = new Schema({
         type: String,
         required: true,
         minlength: 5,
-        maxLength: 200,
+        maxlength: 200,
         trim: true,
     },
     receiver:{
@@ -29,4 +29,4 @@ const messageSchema = new Schema({
             updatedAt:true,
         },
     })
-export const Message = model("Message", );
+export const Message = model("Message", messageSchema);

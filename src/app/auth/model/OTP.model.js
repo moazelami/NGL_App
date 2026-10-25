@@ -4,13 +4,18 @@ const otpSchema = new Schema({
     code:{
         type: String,
         required: true,
-        length: 6,
+        match: /^\d{6}$/,
     },
     email:{
         type: String,
         required: true,
         lowercase: true,
         trim: true,
+    },
+    purpose:{
+        type: String,
+        enum: ['verify', 'reset'],
+        default: 'verify',
     },
     expireAt:{
         type: Date,
@@ -24,7 +29,5 @@ const otpSchema = new Schema({
             updatedAt:true,
         }
     });
-
-otpSchema.index({createdAt:1} , {expireAfterSeconds:300});
 
 export const OTP = model('OTP',otpSchema);

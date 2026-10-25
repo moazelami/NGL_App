@@ -1,7 +1,7 @@
 import * as authService from '../service/auth.service.js';
 import { toMs } from "../../../pkg/utils/time.js";
 import { validateBody } from '../../../lib/validation/validation.js';
-import { registerDTO, verifyAccountDTO } from '../dto/auth.dto.js';
+import { registerDTO, verifyAccountDTO, loginDTO, senddtoDTO, resetPasswordDTO, googleLoginDTO } from '../dto/auth.dto.js';
 
 export const register = async (req, res , next) => {
     try {
@@ -23,7 +23,7 @@ export const verifyAccount = async (req, res , next) => {
         const { email, code } = data;
         const updatedUser = await authService.verifyAccount(email, code);
         res.json({
-            message: 'user already Verified',
+            message: 'Account verified successfully',
             success: true,
             data: updatedUser
         })
@@ -37,7 +37,7 @@ export const login = async (req, res , next) => {
         const data = validateBody(loginDTO, req.body);
         const {email , password} = data;
         const token = await authService.login(email, password);
-        res.cookie('access-token',token,{httpOnly:true , maxAge:toMs(5,'hours')});
+        res.cookie('access-token',token,{httpOnly:true , sameSite:'lax', maxAge:toMs(5,'hours')});
         res.json({
             message: 'Login successful',
             success: true,
@@ -77,8 +77,9 @@ export const resetPassword = async (req, res , next) => {
 
 export const loginWithGoogle = async (req, res, next) => {
     try {
-        const token = await authService.loginWithGoogle(req.body.idToken);
-        res.cookie('access-token', token, { httpOnly: true, maxAge: toMs(5, 'hours') });
+        const data = validateBody(googleLoginDTO, req.body);
+        const token = await authService.loginWithGoogle(data.idToken);
+        res.cookie('access-token', token, { httpOnly: true, sameSite: 'lax', maxAge: toMs(5, 'hours') });
         res.json({
             message: 'user login successful',
             success: true,

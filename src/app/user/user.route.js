@@ -6,7 +6,7 @@ import { withCache } from '../../lib/cache/withCache.js';
 const router = new Router();
 
 router.get('/get-all-users', withCache(), async (req, res, next) => {
-    const data = await User.find();
-    res.json(users);
+    const data = await User.find().select('-password');
+    res.json(data);
 });
 export default router;
