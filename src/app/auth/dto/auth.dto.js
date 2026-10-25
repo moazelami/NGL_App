@@ -34,3 +34,12 @@ export const resetPasswordDTO = z.object({
 export const googleLoginDTO = z.object({
     idToken: z.string().min(1),
 });
+
+export const confirmTwoFactorEnableDTO = z.object({
+    code: z.string().regex(/^\d{6}$/, 'Code must be 6 digits'),
+});
+
+export const confirmTwoFactorLoginDTO = z.object({
+    email: z.string().trim().email().toLowerCase(),
+    code: z.string().regex(/^\d{6}$/, 'Code must be 6 digits'),
+});

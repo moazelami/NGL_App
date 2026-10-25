@@ -32,20 +32,37 @@ export const verifyAccount = async (req, res , next) => {
     }
 };
 
-export const login = async (req, res , next) => {
+export const login = async (req, res, next) => {
     try {
         const data = validateBody(loginDTO, req.body);
-        const {email , password} = data;
-        const token = await authService.login(email, password);
-        res.cookie('access-token',token,{httpOnly:true , sameSite:'lax', maxAge:toMs(5,'hours')});
+        const { email, password } = data;
+
+        const result = await authService.login(email, password);
+
+        if (result.requiresTwoFactor) {
+            return res.json({
+                message: 'Verification code sent to your email',
+                success: true,
+                requiresTwoFactor: true,
+            });
+        }
+
+        res.cookie('access_token', result.token, {
+            httpOnly: true,
+            sameSite: 'lax',
+            maxAge: toMs(5, 'hours'),
+        });
+
         res.json({
             message: 'Login successful',
             success: true,
+            requiresTwoFactor: false,
         });
-    }catch(err){
+    } catch (err) {
         next(err);
     }
 };
+
 
 export const sendOtp = async (req, res , next) => {
     try {
@@ -90,6 +107,79 @@ export const loginWithGoogle = async (req, res, next) => {
 };
 
 
+export const requestTwoFactorEnable = async (req, res, next) => {
+    try {
+        const userId = req.user?.id;
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required',
+            });
+        }
+
+        const result = await authService.requestTwoFactorEnable(userId);
+
+        res.json({
+            success: true,
+            ...result,
+        });
+    } catch (err) {
+        next(err);
+    }
+};
 
 
 
+export const confirmTwoFactorEnable = async (req, res, next) => {
+    try {
+        const data = validateBody(confirmTwoFactorEnableDTO, req.body);
+        const userId = req.user?.id;
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required',
+            });
+        }
+
+        const result = await authService.confirmTwoFactorEnable(
+            userId,
+            data.code
+        );
+
+        res.json({
+            success: true,
+            message: 'Two-factor authentication enabled successfully',
+            data: result,
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+
+
+export const confirmTwoFactorLogin = async (req, res, next) => {
+    try {
+        const data = validateBody(confirmTwoFactorLoginDTO, req.body);
+
+        const token = await authService.confirmTwoFactorLogin(
+            data.email,
+            data.code
+        );
+
+        res.cookie('access_token', token, {
+            httpOnly: true,
+            sameSite: 'lax',
+            maxAge: toMs(5, 'hours'),
+        });
+
+        res.json({
+            message: 'Login successful',
+            success: true,
+        });
+    } catch (err) {
+        next(err);
+    }
+};

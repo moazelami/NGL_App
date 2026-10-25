@@ -88,32 +88,86 @@ export const verifyAccount = async (email , code)=>{
     return userWithoutPassword;
 };
 
-export const login = async (email , password)=>{
+
+export const login = async (email, password) => {
     const user = await authRepo.checkUserExistByEmail(email);
-    if (!user) {
+
+    if (!user || user.isDeleted === true || !user.password) {
         throw invalidEmailOrPassword;
     }
 
-    if(user.isDeleted === true) {
+    const now = Date.now();
+
+    if (user.bannedUntil && user.bannedUntil.getTime() > now) {
         throw invalidEmailOrPassword;
     }
 
-    if (!user.password) {
-        throw invalidEmailOrPassword;
+    if (user.bannedUntil && user.bannedUntil.getTime() <= now) {
+        await userRepo.updateUserByEmail(email, {
+            failedAttempts: 0,
+            bannedUntil: null,
+        });
+
+        user.failedAttempts = 0;
+        user.bannedUntil = null;
     }
 
     let isMatch = false;
+
     try {
         isMatch = await comparePassword(password, user.password);
     } catch {
         throw invalidEmailOrPassword;
     }
 
-    if (!isMatch)
-         throw invalidEmailOrPassword;
+    if (!isMatch) {
+        const failedAttempts = (user.failedAttempts || 0) + 1;
 
-    if(!user.isVerified) {
+        const update = failedAttempts >= 5
+            ? {
+                failedAttempts: 0,
+                bannedUntil: new Date(now + time.toMs(5, 'minutes')),
+            }
+            : { failedAttempts, bannedUntil: null };
+
+        await userRepo.updateUserByEmail(email, update);
+        throw invalidEmailOrPassword;
+    }
+
+    if (!user.isVerified) {
         throw pleaseVerifyYourAccount;
+    }
+
+    await userRepo.updateUserByEmail(email, {
+        failedAttempts: 0,
+        bannedUntil: null,
+    });
+
+    // If 2FA is enabled, send OTP instead of issuing a token.
+    if (user.isTwoFactorEnabled) {
+        await otpRepo.deleteOtp(email, 'login-2fa');
+
+        const code = generateOtpCode();
+
+        await otpRepo.createOTP({
+            code,
+            email,
+            purpose: 'login-2fa',
+            expireAt: new Date(Date.now() + time.toMs(5, 'minutes')),
+        });
+
+        try {
+            await sendEmail(
+                email,
+                'Login verification code',
+                `<h1>Your login verification code is ${code}</h1>`
+            );
+        } catch (err) {
+            await otpRepo.deleteOtp(email, 'login-2fa');
+            throw err;
+        }
+
+        return { requiresTwoFactor: true };
     }
 
     const token = generateToken({
@@ -122,9 +176,10 @@ export const login = async (email , password)=>{
         role: user.role,
     });
 
-    return token;
-
+    return { requiresTwoFactor: false, token };
 };
+
+
 
 export const sendOtp = async (email) => {
     const user = await authRepo.checkUserExistByEmail(email);
@@ -222,17 +277,125 @@ export const loginWithGoogle = async (idToken) => {
 }
 
 
+export const requestTwoFactorEnable = async (userId) => {
+    const user = await userRepo.findUserById(userId);
+
+    if (!user || user.isDeleted === true) {
+        throw userNotExist;
+    }
+
+    if (!user.isVerified) {
+        throw pleaseVerifyYourAccount;
+    }
+
+    if (user.isTwoFactorEnabled) {
+        throw userAlreadyVerified;
+    }
+
+    await otpRepo.deleteOtp(user.email, 'enable-2fa');
+
+    const code = generateOtpCode();
+
+    await otpRepo.createOTP({
+        code,
+        email: user.email,
+        purpose: 'enable-2fa',
+        expireAt: new Date(Date.now() + time.toMs(5, 'minutes')),
+    });
+
+    try {
+        await sendEmail(
+            user.email,
+            'Enable two-factor authentication',
+            `<h1>Your 2FA verification code is ${code}</h1>`
+        );
+    } catch (err) {
+        await otpRepo.deleteOtp(user.email, 'enable-2fa');
+        throw err;
+    }
+
+    return { message: '2FA verification code sent to your email' };
+};
 
 
 
+export const confirmTwoFactorEnable = async (userId, code) => {
+    const user = await userRepo.findUserById(userId);
+
+    if (!user || user.isDeleted === true) {
+        throw userNotExist;
+    }
+
+    if (user.isTwoFactorEnabled) {
+        throw userAlreadyVerified;
+    }
+
+    const otp = await otpRepo.findOTP(
+        user.email,
+        code,
+        'enable-2fa'
+    );
+
+    if (!otp) {
+        throw invalidCode;
+    }
+
+    if (otp.expireAt.getTime() <= Date.now()) {
+        await otpRepo.deleteOtp(user.email, 'enable-2fa');
+        throw expiredOtp;
+    }
+
+    const updatedUser = await userRepo.updateUserByEmail(
+        user.email,
+        { isTwoFactorEnabled: true }
+    );
+
+    if (!updatedUser) {
+        throw userNotExist;
+    }
+
+    await otpRepo.deleteOtp(user.email, 'enable-2fa');
+
+    return {
+        isTwoFactorEnabled: updatedUser.isTwoFactorEnabled,
+    };
+};
 
 
+export const confirmTwoFactorLogin = async (email, code) => {
+    const user = await authRepo.checkUserExistByEmail(email);
 
+    if (
+        !user ||
+        user.isDeleted === true ||
+        !user.isVerified ||
+        !user.isTwoFactorEnabled
+    ) {
+        throw invalidEmailOrPassword;
+    }
 
+    // Check that the account is not currently banned.
+    if (user.bannedUntil && user.bannedUntil.getTime() > Date.now()) {
+        throw invalidEmailOrPassword;
+    }
 
+    const otp = await otpRepo.findOTP(email, code, 'login-2fa');
 
+    if (!otp) {
+        throw invalidCodeOrEmail;
+    }
 
+    if (otp.expireAt.getTime() <= Date.now()) {
+        await otpRepo.deleteOtp(email, 'login-2fa');
+        throw expiredOtp;
+    }
 
+    // Consume the OTP so it cannot be reused.
+    await otpRepo.deleteOtp(email, 'login-2fa');
 
-
-
+    return generateToken({
+        id: user.id,
+        name: user.name,
+        role: user.role,
+    });
+};

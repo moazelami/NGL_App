@@ -6,4 +6,12 @@ export const sendMessageDto = z.object({
     receiver: z.string().trim().refine((val) => {
         return Types.ObjectId.isValid(val);
     }),
-})
+});
+
+export const identityRequestDecisionDto = z.object({
+    status: z.enum(['accepted', 'rejected']),
+});
+
+export const conversationMessageDto = z.object({
+    content: z.string().trim().min(1).max(200),
+});

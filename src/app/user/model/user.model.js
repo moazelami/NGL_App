@@ -50,8 +50,21 @@ const userSchema = new Schema(
             type: String,
             enum: ['male', 'female'],
             default: 'male',
-        }
+        },
+        failedAttempts: {
+            type: Number,
+            default: 0,
+        },
+        bannedUntil: {
+            type: Date,
+            default: null,
+        },
+        isTwoFactorEnabled: {
+            type: Boolean,
+            default: false,
+        },
     },
+    
     {
         timestamps:{
             createdAt: true,

@@ -14,7 +14,7 @@ const otpSchema = new Schema({
     },
     purpose:{
         type: String,
-        enum: ['verify', 'reset'],
+        enum: ['verify', 'reset', 'enable-2fa', 'login-2fa'],
         default: 'verify',
     },
     expireAt:{

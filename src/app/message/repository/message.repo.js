@@ -8,11 +8,15 @@ export const createMessage = async (content, receiver, sender) => {
     });
 };
 
+export const findMessageById = async (messageId) => {
+    return Message.findOne({ _id: messageId, isDeleted: false });
+};
+
 export const getAllMessages = async (userId) => {
     return Message.find({
-        receiver: userId
-    },
-        {},
-        {populate: {path:"sender", select:"-password"}}
-    )
-}
+        receiver: userId,
+        isDeleted: false,
+    })
+        .sort({ createdAt: -1 })
+        .lean();
+};
